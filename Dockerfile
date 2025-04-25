@@ -11,8 +11,5 @@ RUN npm install --production
 # Copy the rest of your application
 COPY . .
 
-# Expose the port your app runs on (optional, useful for Docker networks)
-EXPOSE 3000
-
 # Start the app
 CMD ["node", "signup.js"]
