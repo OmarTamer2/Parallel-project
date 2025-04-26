@@ -16,7 +16,7 @@ function validateEmail(email) {
     return regex.test(email); // Returns `true` if valid
 }
 
-app = express();
+const app = express();
 app.use(express.json());
 
 app.post('/account/signup', async (req, res) => {
@@ -31,14 +31,14 @@ app.post('/account/signup', async (req, res) => {
             return res.status(400).json('The Email you entered is not valid');
         }
 
-        const [nameResults] = await sequelize.query('SELECT name FROM users WHERE name = $1', {
-            bind: [name],
-        });
-        if (nameResults.length != 0) {
-            return res.status(400).json('The name is already used');
-        }
+        // const [nameResults] = await sequelize.query('SELECT name FROM ACCOUNT WHERE name = $1', {
+        //     bind: [name],
+        // });
+        // if (nameResults.length != 0) {
+        //     return res.status(400).json('The name is already used');
+        // }
 
-        const [emailResults] = await sequelize.query('SELECT email FROM users WHERE email = $1', {
+        const [emailResults] = await sequelize.query('SELECT email FROM ACCOUNT WHERE email = $1', {
             bind: [email],
         });
         if (emailResults.length != 0) {
@@ -51,10 +51,10 @@ app.post('/account/signup', async (req, res) => {
 
         const hashed_password = await bcrypt.hash(password, saltrounds);
 
-        await sequelize.query('INSERT INTO users(name, email, password) VALUES($1, $2, $3)', {
-            bind: [name, email, hashed_password],
+        await sequelize.query('INSERT INTO ACCOUNT(name, email, password_hash, balance) VALUES($1, $2, $3, $4)', {
+            bind: [name, email, hashed_password, 0], // account_id is auto-incremented by the database whether Postgres or SQLite
         });
-        return res.status(200).json('user inserted succesful');
+        return res.status(201).json('user inserted succesful');
     } catch (error) {
         return res.status(404).json({ Error: error.message });
     }
@@ -64,7 +64,7 @@ app.post('/account/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        const [results] = await sequelize.query('SELECT * FROM users WHERE email = $1', {
+        const [results] = await sequelize.query('SELECT * FROM ACCOUNT WHERE email = $1', {
             bind: [email],
         });
 
@@ -85,11 +85,13 @@ app.post('/account/login', async (req, res) => {
     }
 });
 
-// Test connection and start server
-sequelize.authenticate().then(() => {
-    app.listen(PORT, () => {
-        console.log("Listening on port " + PORT);
-    });
-}).catch((error) => {
-    console.error('Unable to connect to the database:', error);
+const server = app.listen(PORT, () => {
+    console.log("Listening on port " + PORT);
 });
+
+sequelize.authenticate().catch((error) => {
+    console.error('Unable to connect to the database:', error);
+    server.close();
+});
+
+module.exports = { server, app, sequelize };
