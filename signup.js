@@ -1,6 +1,7 @@
 const express = require('express');
 const { Sequelize } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const axios = require('axios');
 const saltrounds = 12;
 
 require('dotenv').config();
@@ -72,14 +73,17 @@ app.post('/account/login', async (req, res) => {
             return res.status(401).json('This Email does not exist');
         }
 
-        const valid_password = await bcrypt.compare(password, results[0].password);
+        const valid_password = await bcrypt.compare(password, results[0].password_hash);
 
         if (!valid_password) {
             return res.status(401).json('Either the password or the Email is wrong');
         }
 
+        // contact auth service and pass user id
+        const result = await axios.post(`http://${process.env.AUTH_HOST}:${process.env.AUTH_PORT}/auth/create-token?user_id=${results[0].account_id}`)
+
         //give token
-        return res.status(200).json('loged in');
+        return res.status(200).json(result.data);
     } catch (error) {
         return res.status(404).json({ Error: error.message });
     }
