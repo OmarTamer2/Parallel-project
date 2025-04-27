@@ -39,7 +39,7 @@ afterAll(async () => {
     await new Promise((resolve) => server.close(resolve));
 });
 
-describe('API Tests', () => {
+describe('API Signup Tests', () => {
   it('should create a new account (201)', async () => {
     const res = await request(app)
         .post('/account/signup')
