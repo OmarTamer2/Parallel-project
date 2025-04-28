@@ -80,6 +80,7 @@ app.post('/account/login', async (req, res) => {
         }
 
         // contact auth service and pass user id
+        // noinspection HttpUrlsUsage
         const result = await axios.post(`http://${process.env.AUTH_HOST}:${process.env.AUTH_PORT}/auth/create-token?user_id=${results[0].account_id}`)
 
         //give token
