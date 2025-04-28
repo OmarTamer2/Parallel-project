@@ -90,6 +90,36 @@ app.post('/account/login', async (req, res) => {
     }
 });
 
+app.post('/account/create-external-token', async (req, res) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Unauthorized: Missing or invalid Bearer token' });
+    }
+
+    const token = authHeader.split(' ')[1]; // Extract the token
+
+    try {
+        // noinspection HttpUrlsUsage
+        const response = await axios.post(`http://${process.env.AUTH_HOST}:${process.env.AUTH_PORT}/auth/verify-token`, { token });
+
+        if (response.data && response.data.valid) {
+            const id = response.data.user;
+
+            // noinspection HttpUrlsUsage
+            const result = await axios.post(`http://${process.env.AUTH_HOST}:${process.env.AUTH_PORT}/auth/create-token?user_id=${id}`)
+
+            //give token
+            return res.status(200).json(result.data);
+        } else {
+            return res.status(401).json({ message: 'Unauthorized: Invalid token' });
+        }
+    } catch (error) {
+        console.error('Error communicating with auth service:', error.message);
+        return res.status(500).json({ message: 'Internal server error: Authentication failed' });
+    }
+});
+
 const server = app.listen(PORT, () => {
     console.log("Listening on port " + PORT);
 });
