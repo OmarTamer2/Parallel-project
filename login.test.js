@@ -83,7 +83,7 @@ describe('API Login Tests', () => {
             .expect(200);
 
         expect(res.body.token).toBe('fake-token');
-        expect(res.body.name).toBe('Some user with password: password');
-        expect(res.body.email).toBe('some@user.com');
+        expect(res.body.user.name).toBe('Some user with password: password');
+        expect(res.body.user.email).toBe('some@user.com');
     });
 });

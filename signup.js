@@ -84,7 +84,7 @@ app.post('/account/login', async (req, res) => {
         const result = await axios.post(`http://${process.env.AUTH_HOST}:${process.env.AUTH_PORT}/auth/create-token?user_id=${results[0].account_id}`)
 
         //give token
-        return res.status(200).json(result.data);
+        return res.status(200).json({...result.data, user: {email, name: results[0].name}});
     } catch (error) {
         return res.status(404).json({ Error: error.message });
     }
