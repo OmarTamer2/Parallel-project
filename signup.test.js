@@ -12,6 +12,8 @@ beforeEach(async () => {
     await sequelize.truncate({ cascade: true });
     // await sequelize.sync({ force: true });
 
+    await sequelize.query('DROP TABLE IF EXISTS ACCOUNT_PREFERENCES');
+    await sequelize.query('DROP TABLE IF EXISTS ACCOUNT_METADATA');
     await sequelize.query('DROP TABLE IF EXISTS ACCOUNT');
 
     // Insert your fixture
@@ -22,8 +24,7 @@ beforeEach(async () => {
           name VARCHAR(255) NOT NULL,
           email VARCHAR(255) NOT NULL,         -- Email addresses are text
           balance DECIMAL(10,2) NOT NULL,      -- Monetary value should be decimal
-          account_id INT,
-          PRIMARY KEY (account_id)
+          account_id INTEGER PRIMARY KEY
       );
     `).catch(console.error);
 
@@ -31,7 +32,27 @@ beforeEach(async () => {
       INSERT INTO ACCOUNT (name, email, balance, account_id, password_hash)
       VALUES ('Existing User', 'existing@example.com', 100.22, 33, '$bcrypt$2b$10$examplehash')
     `).catch(console.error);
+
+    await sequelize.query(`
+        CREATE TABLE ACCOUNT_PREFERENCES
+            (
+                account_id INTEGER PRIMARY KEY REFERENCES ACCOUNT(account_id),
+                language VARCHAR(10) DEFAULT 'en',
+                theme VARCHAR(50) DEFAULT 'light',
+                notifications_enabled BOOLEAN DEFAULT TRUE
+            );
+    `);
+
+    await sequelize.query(`
+        CREATE TABLE ACCOUNT_METADATA
+        (
+            account_id INTEGER PRIMARY KEY REFERENCES ACCOUNT(account_id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_login TIMESTAMP
+        );
+    `);
 });
+
 
 afterAll(async () => {
     // Close DB connection
@@ -57,6 +78,22 @@ describe('API Signup Tests', () => {
 
     expect(results.length).toBe(1);
     expect(results[0].name).toBe('New User');
+
+    const [results_pref] = await sequelize.query(`
+        SELECT * FROM ACCOUNT_PREFERENCES WHERE account_id = ${results[0].account_id}
+    `);
+    expect(results_pref.length).toBe(1);
+    expect(results_pref[0].language).toBe('en');
+    expect(results_pref[0].theme).toBe('light');
+    expect(results_pref[0].notifications_enabled).toBe(1);
+
+    const [results_meta] = await  sequelize.query(`
+        SELECT * FROM ACCOUNT_METADATA WHERE account_id = ${results[0].account_id}
+    `)
+
+    expect(results_meta.length).toBe(1);
+    expect(results_meta[0].created_at).toBeDefined();
+    expect(results_meta[0].last_login).toBeNull();
   });
 
   it('should reject invalid payload (400)', async () => {

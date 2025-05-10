@@ -73,10 +73,10 @@ app.post('/account/signup', async (req, res) => {
             bind: [name, email, hashed_password, 0], // account_id is auto-incremented by the database whether Postgres or SQLite
         });
 
-        const record = await pool.query('select account_id from ACCOUNT where email = $1', [email]);
-        const account_id = record.rows[0].account_id;
-        await pool.query('insert into ACCOUNT_PREFERENCES(account_id) VALUES($1)', [account_id]);
-        await pool.query('insert into ACCOUNT_METADATA(account_id) VALUES($1)', [account_id]);
+        const record = await sequelize.query('SELECT * FROM ACCOUNT where email = $1', {bind: [email]})
+        const account_id = record[0][0].account_id;
+        await sequelize.query('insert into ACCOUNT_PREFERENCES(account_id) VALUES($1)', {bind: [account_id]});
+        await sequelize.query('insert into ACCOUNT_METADATA(account_id) VALUES($1)', {bind: [account_id]});
         return res.status(201).json('user inserted succesful');
 
     } catch (error) {
@@ -106,7 +106,7 @@ app.post('/account/login', async (req, res) => {
         // noinspection HttpUrlsUsage
         const result = await axios.post(`http://${process.env.AUTH_HOST}:${process.env.AUTH_PORT}/auth/create-token?user_id=${results[0].account_id}`)
 
-        await sequelize.query('update ACCOUNT_METADATA set last_login = $1 where account_id = $2', [new Date(), result[0].account_id])
+        await sequelize.query('update ACCOUNT_METADATA set last_login = $1 where account_id = $2', {bind: [new Date(), results[0].account_id]})
 
         //give token
         return res.status(200).json({...result.data, user: {email, name: results[0].name}});
@@ -159,7 +159,7 @@ app.post('/account/preferences', async (req, res) =>{
     try {
 
         const user_id = extractUserIdFromToken(token);
-        const preferences = await sequelize.query('select * from ACCOUNT_PREFERENCES where account_id = $1', [user_id]);
+        const preferences = await sequelize.query('select * from ACCOUNT_PREFERENCES where account_id = $1', {bind: [user_id]});
 
         if(preferences.length === 0){
             return res.status(404).json({error: "No preferences found"})
@@ -188,7 +188,7 @@ app.put('/account/preferences', async (req, res) =>{
 
         const user_id = extractUserIdFromToken(token);
         await sequelize.query('update ACCOUNT_PREFERENCES put language = $1, theme = $2, notifications_enabled = $3 where account_id = $4',
-            [language, theme, notifications_enabled, user_id]
+            {bind: [language, theme, notifications_enabled, user_id]}
         )
         return res.status(200).json('Preferences updated')
     
