@@ -93,13 +93,13 @@ app.post('/account/login', async (req, res) => {
         });
 
         if (results.length == 0) {
-            return res.status(401).json('This Email does not exist');
+            return res.status(401).json({error: 'This Email does not exist'});
         }
 
         const valid_password = await bcrypt.compare(password, results[0].password_hash);
 
         if (!valid_password) {
-            return res.status(401).json('Either the password or the Email is wrong');
+            return res.status(401).json({error: 'Either the password or the Email is wrong'});
         }
 
         // contact auth service and pass user id
@@ -111,7 +111,7 @@ app.post('/account/login', async (req, res) => {
         //give token
         return res.status(200).json({...result.data, user: {email, name: results[0].name}});
     } catch (error) {
-        return res.status(404).json({ Error: error.message });
+        return res.status(404).json({ error: error.message });
     }
 });
 
@@ -191,7 +191,7 @@ app.put('/account/preferences', async (req, res) =>{
         await sequelize.query('update ACCOUNT_PREFERENCES put language = $1, theme = $2, notifications_enabled = $3 where account_id = $4',
             {bind: [language, theme, notifications_enabled, user_id]}
         )
-        return res.status(200).json('Preferences updated')
+        return res.status(200).json({message: 'Preferences updated'})
     
     }
     catch(err){
