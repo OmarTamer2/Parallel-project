@@ -121,4 +121,21 @@ describe('API Login Tests', () => {
         const [results] = await sequelize.query('SELECT last_login FROM ACCOUNT_METADATA WHERE account_id = 2');
         expect(results[0].last_login).not.toBeNull();
     });
+
+    it('should return info (200)', async () => {
+        nock('http://fake-auth-service:8080')
+            .post('/auth/verify-token', {token: 'fake-token'})
+            .reply(200, { valid: true, user: 2 });
+
+        const res = await request(app)
+            .get('/account/info')
+            .set('Authorization', 'Bearer fake-token')
+            .expect(200);
+
+        expect(res.body.account_id).toBe(2)
+        expect(res.body.language).toBe('en');
+        expect(res.body.theme).toBe('light');
+        expect(res.body.notifications_enabled).toBe(1);
+        expect(res.body.created_at).toBeDefined();
+    });
 });

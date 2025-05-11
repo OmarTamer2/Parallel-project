@@ -146,7 +146,7 @@ app.post('/account/create-external-token', async (req, res) => {
     }
 });
 
-app.post('/account/preferences', async (req, res) =>{
+app.get('/account/info', async (req, res) =>{
     const authHeader = req.headers.authorization;
 
     //I feel like you can delete but just in case 
@@ -158,13 +158,14 @@ app.post('/account/preferences', async (req, res) =>{
 
     try {
 
-        const user_id = extractUserIdFromToken(token);
+        const user_id = await extractUserIdFromToken(token);
         const preferences = await sequelize.query('select * from ACCOUNT_PREFERENCES where account_id = $1', {bind: [user_id]});
+        const meta = await sequelize.query('select * from ACCOUNT_METADATA where account_id = $1', {bind: [user_id]});
 
         if(preferences.length === 0){
             return res.status(404).json({error: "No preferences found"})
         }
-        return res.status(200).json(preferences)
+        return res.status(200).json({...preferences[0][0], ...meta[0][0]})
     
     }
     catch(err){
